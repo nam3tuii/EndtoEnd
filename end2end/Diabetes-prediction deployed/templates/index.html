@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Dự đoán bệnh tiểu đường</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='interactive spider.css') }}">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    #canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      display: block;
+      background: #000;
+    }
+    body {
+      min-height: 100vh;
+      font-family: 'Montserrat', Arial, sans-serif;
+      position: relative;
+      z-index: 1;
+      background: #23272b;
+    }
+    .main-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      justify-content: center;
+    }
+    h1 {
+      color: #fff;
+      font-size: 2.8rem;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      font-weight: 700;
+      text-align: center;
+      animation: fadeInDown 1.2s;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .login {
+      background: rgba(255,255,255,0.13);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+      padding: 40px 32px 32px 32px;
+      margin: 0px 0 20px 0;
+      width: 370px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeInUp 1.2s;
+      align-items: stretch;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .form-input {
+      width: 100%;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      font-size: 1rem;
+      color: #222;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      transition: box-shadow 0.3s, background 0.3s;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .form-input:focus, .form-input:hover {
+      background: #fff;
+      box-shadow: 0 4px 18px 0 rgba(67,206,162,0.25);
+      border: 1.5px solid #43cea2;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px 0;
+      margin-top: 18px;
+      background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(24,90,157,0.18);
+      transition: background 0.3s, transform 0.2s;
+      letter-spacing: 1px;
+    }
+    .btn:hover {
+      background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 6px 24px rgba(24,90,157,0.22);
+    }
+    .result {
+      margin-top: 18px;
+      font-size: 1.15rem;
+      color: #222;
+      background: rgba(255,255,255,0.8);
+      border-radius: 10px;
+      padding: 12px 0;
+      box-shadow: 0 2px 8px rgba(67,206,162,0.12);
+      animation: fadeIn 1s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0;}
+      to { opacity: 1;}
+    }
+    footer {
+      margin-top: 30px;
+      color: #fff;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      text-align: center;
+      padding-bottom: 18px;
+      opacity: 0.85;
+    }
+    @media (max-width: 500px) {
+      .login { width: 95vw; padding: 18px 6vw; }
+      .form-input { font-size: 0.95rem; }
+      h1 { font-size: 2rem; }
+    }
+    @keyframes lightning {
+      0%, 97%, 100% { color: #fff; text-shadow: 0 4px 24px rgba(0,0,0,0.3);}
+      98% { color:rgb(255, 255, 255); text-shadow: 0 0 40px rgb(255, 255, 255), 0 0 80px rgb(255, 255, 249);}
+      99% { color: #fff; text-shadow: 0 0 0 rgb(255, 255, 255)0;}
+    }
+    h1.lightning {
+      animation: lightning 2s infinite;
+      transition: color 0.1s, text-shadow 0.1s;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script src="{{ url_for('static', filename='interactive spider.js') }}"></script>
+  <div class="main-content">
+    <h1 class="lightning">Dự đoán bệnh tiểu đường</h1>
+    <div class="login">
+      <form action="{{ url_for('predict')}}" method="post" autocomplete="off">
+        <input class="form-input" type="text" name="fullname" id='fullname' placeholder="Họ và tên (Ví dụ: Nguyễn Văn A)" required>
+        <input class="form-input" type="text" name="pregnancies" placeholder="Số lần mang thai (Ví dụ: 0)" required>
+        <input class="form-input" type="text" name="glucose" placeholder="Nồng độ Glucose(mg/dl) (Ví dụ: 80)" required>
+        <input class="form-input" type="text" name="bloodpressure" placeholder="Huyết áp (mmHg) (Ví dụ: 80)" required>
+        <input class="form-input" type="text" name="skinthickness" placeholder="Độ dày của da (mm) (Ví dụ: 20)" required>
+        <input class="form-input" type="text" name="insulin" placeholder="Mức Insulin (IU/mL) (Ví dụ: 80)" required>
+        <input class="form-input" type="text" name="bmi" placeholder="Chỉ số khối của cơ thể (kg/m²) (Ví dụ: 23.1)" required>
+        <input class="form-input" type="text" name="dpf" placeholder="Hàm phả hệ bệnh tiểu đường-DPF (Ví dụ: 0.52)" required>
+        <input class="form-input" type="text" name="age" placeholder="Tuổi (Ví dụ: 34)" required>
+        <button type="submit" class="btn">Dự đoán</button>
+      </form>
+      {% if prediction_text %}
+        <div class="result">{{ prediction_text }}</div>
+      {% endif %}
+    </div>
+    <footer>
+      ´꒳`Made with DR.DUNG ´꒳`
+    </footer>
+  </div>
+  <script>
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const nameInput = document.getElementById('fullname');
+    const name = nameInput.value.trim();
+    // Định dạng: ít nhất 2 từ, mỗi từ chỉ gồm chữ cái (có dấu) và khoảng trắng
+    const nameRegex = /^([A-ZÀ-Ý][a-zà-ỹ]+(?:\s+[A-ZÀ-Ý][a-zà-ỹ]+)+)$/u;
+    if (!nameRegex.test(name)) {
+      alert('Vui lòng nhập Họ và tên hợp lệ (Mỗi từ phải viết hoa chữ đầu, ít nhất 2 từ, chỉ chữ cái và khoảng trắng, không số/ký tự đặc biệt)!');
+      nameInput.focus();
+      e.preventDefault();
+    }
+  });
+  function drawLightning() {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const startX = w * (0.3 + Math.random() * 0.4);
+    const startY = 0;
+    const endX = startX + (Math.random() - 0.5) * 100;
+    const endY = h * 0.6 + Math.random() * h * 0.2;
+    ctx.save();
+    ctx.strokeStyle = "#fff";
+    ctx.shadowColor = "#fff";
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = 3 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    let prevX = startX, prevY = startY;
+    const steps = 8 + Math.floor(Math.random() * 4);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const x = startX + (endX - startX) * t + (Math.random() - 0.5) * 30;
+      const y = startY + (endY - startY) * t + (Math.random() - 0.5) * 20;
+      ctx.lineTo(x, y);
+      prevX = x; prevY = y;
+    }
+    ctx.stroke();
+    ctx.restore();
+    setTimeout(() => {
+      ctx.clearRect(0, 0, w, h);
+    }, 120);
+  }
+
+  function randomLightning() {
+    const h1 = document.querySelector('h1.lightning');
+    if (!h1) return;
+    h1.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    if (Math.random() < 0.33) drawLightning();
+    setTimeout(randomLightning, 1200 + Math.random() * 2000);
+  }
+  randomLightning();
+</script>
+</body>
+</html>

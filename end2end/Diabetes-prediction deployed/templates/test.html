@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Spider Web Animation Version 1 </title>
+    <style>
+        /* Basic styles for the body and html */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e5799 0%, #2989d8 50%, #207cca 100%);
+        }
+
+        /* Style for the canvas to make it cover the whole screen */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas element to draw the animation -->
+    <canvas id="background"></canvas>
+    <script>
+        // Get the canvas and context for drawing
+        const canvas = document.getElementById('background');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        // Function to resize the canvas to fit the window
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // Resize the canvas when the window is resized
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Mouse object to store the mouse position and interaction radius
+        const mouse = { x: width / 2, y: height / 2, radius: 200 };
+
+        // Update mouse position on mouse move
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+
+        // Point class to represent each particle in the animation
+        class Point {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.baseX = x; // Original X position
+                this.baseY = y; // Original Y position
+                this.size = 3; // Size of the point
+                this.density = (Math.random() * 30) + 1; // Density affects the movement
+            }
+
+            // Draw the point on the canvas
+            draw() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Update the position of the point based on mouse interaction
+            update() {
+                let dx = mouse.x - this.x; // Distance from mouse to point on x-axis
+                let dy = mouse.y - this.y; // Distance from mouse to point on y-axis
+                let distance = Math.sqrt(dx * dx + dy * dy); // Total distance
+                let maxDistance = mouse.radius; // Maximum interaction radius
+                let forceDirectionX = dx / distance; // Normalized x-direction
+                let forceDirectionY = dy / distance; // Normalized y-direction
+                let force = (maxDistance - distance) / maxDistance; // Force magnitude
+                let directionX = (forceDirectionX * force * this.density); // Force on x-axis
+                let directionY = (forceDirectionY * force * this.density); // Force on y-axis
+
+                // Move point if within interaction radius
+                if (distance < mouse.radius) {
+                    this.x -= directionX;
+                    this.y -= directionY;
+                } else {
+                    // Return to original position if outside interaction radius
+                    if (this.x !== this.baseX) {
+                        let dx = this.x - this.baseX;
+                        this.x -= dx / 10;
+                    }
+                    if (this.y !== this.baseY) {
+                        let dy = this.y - this.baseY;
+                        this.y -= dy / 10;
+                    }
+                }
+            }
+        }
+
+        // Array to hold all points
+        const points = [];
+        const gridSize = 100; // Size of the grid cells
+
+        // Initialize the grid of points
+        function init() {
+            points.length = 0;
+            for (let y = 0; y < height; y += gridSize) {
+                for (let x = 0; x < width; x += gridSize) {
+                    points.push(new Point(x, y));
+                }
+            }
+        }
+
+        // Draw lines between points that are close to each other
+        function drawLines() {
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const dx = points[i].x - points[j].x;
+                    const dy = points[i].y - points[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 150) { // Draw line if points are close enough
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, width, height); // Clear the canvas
+            for (let i = 0; i < points.length; i++) {
+                points[i].update(); // Update each point
+                points[i].draw(); // Draw each point
+            }
+            drawLines(); // Draw lines between points
+            requestAnimationFrame(animate); // Request the next frame
+        }
+
+        // Initialize the grid and start the animation
+        init();
+        animate();
+    </script>
+</body>
+</html>
